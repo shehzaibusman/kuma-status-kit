@@ -1,0 +1,273 @@
+/* =====================================================================
+   Uptime Kuma status page: dark, high-density, wall-display friendly
+   Based on "Uptime Kuma Status Page Dark Mode High Density Tweaks"
+   by @brooksvb: https://gist.github.com/brooksvb/78a54355151a18477e33c224177dc5fa
+   Paste into: Status Page > Edit > Custom CSS
+   ===================================================================== */
+
+/* ---------- 1. Tunables ---------- */
+:root {
+  /* Layout */
+  --min-item-width: 28ch;
+  --max-item-width: .5fr;
+  --grid-spacing: .35rem;
+  --item-padding: .35rem;
+  --item-radius: 6px;
+
+  /* Palette */
+  --bg: #12151a;
+  --surface: #1b1f26;
+  --surface-hover: #222731;
+  --border: #2e343e;
+  --text: #e8eaed;
+  --text-muted: #9aa3ae;
+
+  /* Status colors */
+  --up: #3fb950;
+  --down: #f85149;
+  --pending: #d29922;
+  --maint: #4962bd;
+  --empty: #2a2f38;
+}
+
+/* Let items expand on small screens */
+@media (max-width: 600px) {
+  :root { --max-item-width: 1fr; }
+}
+
+/* Cap item width on large screens */
+@media (min-width: 2560px) {
+  :root { --max-item-width: 300px; }
+}
+
+/* Readability on 4K screens viewed from across the room */
+@media (min-width: 3840px) {
+  .item-name {
+    font-size: 1.3em;          /* fixed: original was missing the colon */
+    font-weight: 700;
+    letter-spacing: .8px;
+  }
+  .badge { font-size: .9em; }
+  .wrap > .d-flex {
+    font-size: .9em;
+    font-weight: 500;
+    letter-spacing: .8px;
+  }
+}
+
+/* ---------- 2. Page + container ---------- */
+body,
+body.dark {
+  background-color: var(--bg) !important;
+  color: var(--text);
+}
+
+.container {
+  max-width: 98%;
+}
+
+/* ---------- 3. Grid layout ---------- */
+
+:root {
+  --group-title-size: 1.5rem;
+}
+
+/* Monitors inside each group */
+.monitor-list > .monitor-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--min-item-width), var(--max-item-width)));
+  gap: var(--grid-spacing);
+}
+
+.item {
+  width: 100%;
+  padding: var(--item-padding) !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--up);
+  border-radius: var(--item-radius);
+  transition: background-color .15s ease;
+}
+
+.item:hover {
+  background-color: var(--surface-hover) !important;
+}
+
+.item > .row { flex-direction: column; }
+.row > div   { width: 100%; }
+
+/* ---------- 4. Status-aware cards (needs :has(), all modern browsers) ----------
+   Uptime badge classes: bg-primary = up, bg-danger = down,
+   bg-warning = pending, bg-maintenance = maintenance */
+.item:has(.badge.bg-warning)     { border-left-color: var(--pending); }
+.item:has(.badge.bg-maintenance) { border-left-color: var(--maint); }
+.item:has(.badge.bg-danger) {
+  border-color: var(--down);
+  border-left-color: var(--down);
+  background-color: color-mix(in srgb, var(--down) 12%, var(--surface)) !important;
+  animation: kuma-down-pulse 2s ease-in-out infinite;
+}
+
+/* Down monitors jump to the front of their group */
+.item:has(.badge.bg-danger)  { order: -2; }
+.item:has(.badge.bg-warning) { order: -1; }
+
+@keyframes kuma-down-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--down) 0%, transparent); }
+  50%      { box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 45%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item:has(.badge.bg-danger) { animation: none; }
+}
+
+/* ---------- 5. Text ---------- */
+.item-name {
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-title,
+.group-title span {
+  color: var(--text) !important;
+  font-size: var(--group-title-size) !important;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.group-title {
+  padding-bottom: .25rem;
+  margin-bottom: .4rem !important;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 3840px) {
+  :root { --group-title-size: 2rem; }
+}
+
+/* ---------- 6. Badge placement ----------
+   The badge sits in its own reserved strip under the heartbeat bar,
+   so it can't overlap the beats however tall the bar renders. */
+:root { --badge-strip: 1.5rem; }
+
+.item > .row { position: relative; }
+
+body:not(.mobile) .item > .row {
+  padding-bottom: var(--badge-strip);
+}
+
+body:not(.mobile) .item .badge {
+  position: absolute;
+  bottom: .15rem;
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 1;
+  z-index: 1;
+}
+
+@media (min-width: 3840px) {
+  :root { --badge-strip: 1.9rem; }
+}
+
+/* ---------- 7. Heartbeat bar ---------- */
+.hp-bar-big .beat {
+  background-color: var(--up);
+  border-radius: 2px !important;
+}
+.hp-bar-big .beat.down        { background-color: var(--down); }
+.hp-bar-big .beat.pending     { background-color: var(--pending); }
+.hp-bar-big .beat.maintenance { background-color: var(--maint); }
+.hp-bar-big .beat.empty       { background-color: var(--empty); }
+
+/* ---------- 8. Status banner ----------
+   Full-width, centered banner under the header */
+.overall-status {
+  position: static !important;
+  width: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  text-align: center;
+  padding: .5rem 1rem !important;
+  margin: .25rem 0 .5rem !important;
+  font-size: 1.15rem;
+  font-weight: 600;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border);
+  border-radius: var(--item-radius);
+}
+
+/* Tint the banner when something is wrong */
+.overall-status:has(.ok) {
+  border-color: color-mix(in srgb, var(--up) 50%, var(--border));
+}
+.overall-status:has(.danger) {
+  border-color: var(--down);
+  background-color: color-mix(in srgb, var(--down) 15%, var(--surface)) !important;
+}
+.overall-status:has(.warning) {
+  border-color: var(--pending);
+  background-color: color-mix(in srgb, var(--pending) 15%, var(--surface)) !important;
+}
+.overall-status:has(.maintenance) {
+  border-color: var(--maint);
+  background-color: color-mix(in srgb, var(--maint) 15%, var(--surface)) !important;
+}
+
+@media (min-width: 3840px) {
+  .overall-status { font-size: 1.6rem; }
+}
+
+/* ---------- 9. Footer compacting ---------- */
+footer .alert-heading { padding: 0 !important; }
+
+/* Uncomment to hide the "Powered by Uptime Kuma" line */
+/* footer .description + p, footer p:last-child { display: none; } */
+
+/* ---------- 10. Margin resets ---------- */
+.mb-4, .mb-5 { margin-bottom: .5rem !important; }
+.mt-4        { margin-top: .5rem !important; }
+.mt-5        { margin-top: 0 !important; }
+
+/* ---------- 11. Maintenance color ---------- */
+.bg-maintenance { background-color: var(--maint) !important; }
+
+/* ---------- 12. Scrollbar ---------- */
+* { scrollbar-color: var(--border) var(--bg); }
+
+/* ---------- 13. Tags ----------
+   Requires "Show Tags" to be enabled on the status page.
+   All tags keep their Kuma colors except the IP tag, which shows as a
+   plain gray outline. The IP tag is matched by its color (#6B7280, set by
+   add-ip-tags.sql), so keep that color unique to the IP tag. */
+.item .extra-info > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-top: .1rem;
+}
+
+/* Compact sizing for all tags */
+.item .extra-info .tag-wrapper {
+  font-size: .75rem !important;
+  padding: 0 .35rem !important;
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+/* IP tag: gray outline, monospace, always first */
+.item .extra-info .tag-wrapper[style*="rgb(107, 114, 128)"],
+.item .extra-info .tag-wrapper[style*="#6B7280" i] {
+  order: -1;
+  background-color: transparent !important;
+  border: 1px solid var(--border);
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+.item .extra-info .tag-wrapper[style*="rgb(107, 114, 128)"] .tag-text,
+.item .extra-info .tag-wrapper[style*="#6B7280" i] .tag-text {
+  color: var(--text-muted) !important;
+}
