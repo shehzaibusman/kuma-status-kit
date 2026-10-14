@@ -295,4 +295,4 @@ The CSS theme builds on [Uptime Kuma Status Page Dark Mode High Density Tweaks](
 
 ## License
 
-Add your license of choice here (for example, MIT).
+MIT License - feel free to use this
